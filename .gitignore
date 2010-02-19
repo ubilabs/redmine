@@ -18,3 +18,4 @@
 /tmp/test/*
 /vendor/rails
 /git_repositories/*
+deploy.rb
