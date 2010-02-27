@@ -1,0 +1,14 @@
+# English strings go here for Rails i18n
+en:
+  label_rrtype: "record type"
+  label_rrdata: "record data"
+  label_dns_add: "add provider"
+  label_domain: "domain"
+  button_snapshot: "take snapshot"
+  button_restore: "load snapshot"
+
+de:
+  label_rrtype: "ressource typ"
+  label_rrdata: "ressource eintrag"
+  label_dns_add: "provider hinzufügen"
+  label_domain: "domäne"

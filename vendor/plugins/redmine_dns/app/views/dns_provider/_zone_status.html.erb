@@ -1,0 +1,60 @@
+<br/>
+<fieldset>
+  <legend>Domain info</legend>
+  <table class="list">
+    <tr>
+      <td><b>hostmaster: </b></td>
+      <td><label><%= @zone.soarname or 'NA' %> </label></td>
+      <td><label>records: </label></td>
+      <td><label><%= @zone.rrstotal or 'NA'%></label></td>
+      <td><%= link_to(l(:button_snapshot), { :controller => 'dns_provider', :action => 'snapshot',
+                        :zone => @zone.soarname }, :method => :post, :class => 'icon icon-save') %>
+      </td>
+
+    </tr>
+    <tr>
+      <td><b>primary NS: </b></td>
+      <td><label><%= @zone.soamname or 'NA' %></label></td>
+      <td><label>www target: </label></td>
+      <td><label><%= @zone.wwwtargetdata or 'NA' %>  (<%=@zone.wwwtargettype%>)</label></td>
+      <td><%= link_to(l(:button_restore), { :controller => 'dns_provider',
+                        :action => 'restore', :record => @zone.soarname },
+                        :method => :post, :class => 'icon icon-ticket_go') %>
+      </td>
+  </tr>
+  </table>
+</fieldset>
+<br/>
+<div class="autoscroll">
+<table class="list">
+  <thead>
+    <tr>
+	<th><%=l(:label_rrtype)%></th>
+	<th><%=l(:label_rrdata)%></th>
+        <th></th>
+    </tr>
+  </thead>
+  <tbody>
+<% for record in @records %>
+  <tr class="<%= cycle("odd", "even") %>">
+	<td class="name"><%= select_tag('rrtype', rrtype_for_select(record), :class => "small") %></td>
+        <td class="name"><input size="60" type="text" name="rrdata" value="<%=  rrdata_for_input(record) %>" /></td>
+  <td class="buttons">
+    <%= link_to('', { :controller => 'dns_provider', :action => 'destroy', :record => rrdata_for_input(record) }, :class => 'icon icon-del') %>
+  </td>
+  </tr>
+<% end %>
+<% if @records.length > 0 %>
+  <tr>
+    <td class="name"><%= select_tag('rrtype', rrtype_for_select(@records[-1]), :class => "small") %></td>
+    <td class="name"><input size="60" type="text" name="rrdata_new" /></td>
+    <td class="buttons">
+    <%= link_to_remote( '', :url => { :controller => 'dns_provider', :action => 'save' },
+                            :with => "Form.Element.serialize('rrdata_new')",
+                            :html => {:class => 'icon icon-save'}) %>
+    </td>
+  </tr>
+<% end %>
+  </tbody>
+</table>
+</div>
