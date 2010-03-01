@@ -1,3 +1,6 @@
+require 'net/http'
+require 'net/https'
+
 class DopoliDnsProvider < DnsProvider
 
   validates_presence_of :name, :username, :password
@@ -13,23 +16,17 @@ class DopoliDnsProvider < DnsProvider
   end
 
   def api_url()
-    return "http://194.50.187.100/api/call.cgi"
+    return "https://api.1api.net/api/ext/xdns.cgi"
+    #return "https://194.50.187.100/api/call.cgi"
   end
 
   def get_domains(params)
     # params: {:userdepth=>'ALL', :limit=>nil, :domain=>nil, :zone=>nil}
     # gah, more perl...
     userdepth = params[:userdepth] || 'ALL'
-    limit = params[:limit] || nil
-    domain = params[:domain] || nil
-    zone = params[:zone] || nil
-
-		data = {'command' => 'QueryDomainlist',
-				'userdepth' => userdepth, 'limit' => limit,
-				'domain' => domain, 'zone' => zone}
-		ret = self.call_remote(data)
-
-		return ret["DOMAIN"]
+		params.update({'command'=>'QueryDNSZoneList', 'userdepth' => userdepth})
+    ret = self.call_remote(params)
+		return ret.fetch("DNSZONE", [])
 	end
 
   def get_zones(zone)
@@ -56,6 +53,10 @@ class DopoliDnsProvider < DnsProvider
     records = Array.new
     ret["RR"].each do |r|
       parts = r.split()
+      #check for X-HTTP REDIRECT (parts.length will be 6)
+      if parts.length == 6
+        parts = [parts[0], parts[1], parts[3], "#{parts[3]}-#{parts[4]}", parts[5] ]
+      end
       records.push(
           DnsRecord.new(:source => parts[0], :ttl => parts[1],
                         :rrtype => parts[3], :target => parts[4])
@@ -84,7 +85,8 @@ class DopoliDnsProvider < DnsProvider
   def add_record(zone, params)
     rr = DnsRecord.new(params) #use AR validations
     # @params {:source, :ttl, :rrtype, :target}
-
+    #FIXME: convert X-HTTP-REDIRECT
+    
 		#fex: ['foo.example.net.', 3600, 'A',  '123.123.123.123']
 		resource = "#{rr.source} #{rr.ttl} IN #{rr.rrtype} #{rr.target}"
 		data = {'command' => 'UpdateDNSZone',
@@ -105,7 +107,7 @@ class DopoliDnsProvider < DnsProvider
   protected
   def parse_response(data)
     ret = Hash.new()
-    re_prop = /property\[(.*?)\]\[(.*?)\]/i
+    re_prop = /PROPERTY\[(.*?)\]\[(.*?)\]/i
 
     for line in data
       kv = line.split('=', 2)
@@ -128,14 +130,19 @@ class DopoliDnsProvider < DnsProvider
   end
 
 	def call_remote(data)
-    logger.debug("calling call_remote with data #{data}")
 		data.update(self.credentials)
+    uri = URI.parse(self.api_url)
+    params = data.collect{|k,v| "#{k}=#{v}" }.join("&")
+    params = URI.encode(params)
 		begin
-			res = Net::HTTP.post_form(URI.parse(self.api_url), data)
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+      resp = http.get(uri.path+"?"+params)
 		rescue Exception => e
 			logger.error("error fetching from dopoli #{e}")
+      #FIXME re-raise or handle properly
 		end
-		return parse_response(res.body)
+		return parse_response(resp.body)
 	end
 end
 

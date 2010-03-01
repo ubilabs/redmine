@@ -19,13 +19,14 @@
       <td><label><%= @zone.wwwtargetdata or 'NA' %>  (<%=@zone.wwwtargettype%>)</label></td>
       <td><%= link_to(l(:button_restore), { :controller => 'dns_provider',
                         :action => 'restore', :record => @zone.soarname },
-                        :method => :post, :class => 'icon icon-ticket_go') %>
+                        :method => :post, :class => 'icon icon-ticket') %>
       </td>
   </tr>
   </table>
 </fieldset>
 <br/>
 <div class="autoscroll">
+<form action="/">
 <table class="list">
   <thead>
     <tr>
@@ -35,12 +36,17 @@
     </tr>
   </thead>
   <tbody>
-<% for record in @records %>
+<% @records.each_with_index do |record,idx| %>
   <tr class="<%= cycle("odd", "even") %>">
 	<td class="name"><%= select_tag('rrtype', rrtype_for_select(record), :class => "small") %></td>
-        <td class="name"><input size="60" type="text" name="rrdata" value="<%=  rrdata_for_input(record) %>" /></td>
+        <td class="name"><input id="record_<%= idx %>" size="60" type="text" name="record_<%= idx %>" value="<%=  rrdata_for_input(record) %>" /></td>
   <td class="buttons">
-    <%= link_to('', { :controller => 'dns_provider', :action => 'destroy', :record => rrdata_for_input(record) }, :class => 'icon icon-del') %>
+    <%= link_to_remote('', :url => { :controller => 'dns_provider', :action => 'save_record' },
+                           :with => "Form.Element.serialize('record_"+idx.to_s+"')+'&'+Form.Element.serialize('domain')",
+                           :html => { :class => 'icon icon-save' }) %>
+    <%= link_to_remote('', :url => { :controller => 'dns_provider', :action => 'del_record' },
+                           :with => "Form.Element.serialize('record_"+idx.to_s+"')+'&'+Form.Element.serialize('domain')",
+                           :html => { :class => 'icon icon-del' }) %>
   </td>
   </tr>
 <% end %>
@@ -49,12 +55,13 @@
     <td class="name"><%= select_tag('rrtype', rrtype_for_select(@records[-1]), :class => "small") %></td>
     <td class="name"><input size="60" type="text" name="rrdata_new" /></td>
     <td class="buttons">
-    <%= link_to_remote( '', :url => { :controller => 'dns_provider', :action => 'save' },
-                            :with => "Form.Element.serialize('rrdata_new')",
+    <%= link_to_remote( '', :url => { :controller => 'dns_provider', :action => 'new_record' },
+                            :with => "Form.Element.serialize('rrdata_new')+'&'+Form.Element.serialize('domain')",
                             :html => {:class => 'icon icon-save'}) %>
     </td>
   </tr>
 <% end %>
   </tbody>
 </table>
+</form>
 </div>

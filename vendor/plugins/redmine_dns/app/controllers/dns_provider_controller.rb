@@ -30,4 +30,16 @@ class DnsProviderController < ApplicationController
     #logger.debug("select_domain called with provider #{@provider} for zone #{@zone} with records #{@records}")
     render :partial => 'zone_status'
   end
+
+  def del_record
+    logger.info(params.to_json)
+  end
+
+  def save_record
+
+  end
+
+  def new_record
+
+  end
 end
