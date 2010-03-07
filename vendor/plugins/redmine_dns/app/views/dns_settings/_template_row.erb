@@ -1,0 +1,9 @@
+<tr id="template_row_<%=t.id %>" class="<%= cycle("odd", "even") %>">
+  <td><%= t.name %></td>
+  <td><%= t.desc %></td>
+  <td class="buttons">
+    <%= link_to_remote('', :url => { :controller => 'dns_settings', :action => 'del_template' },
+                       :with => "'?template="+t.id.to_s+"'",
+                       :html => { :class => 'icon icon-del' }) %>
+  </td>
+</tr>

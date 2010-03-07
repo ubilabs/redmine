@@ -1,4 +1,11 @@
+<style type="text/css">
+  .icon-true {
+    background-image:url(../images/true.png);
+  }
+</style>
+
 <br/>
+<form id="record_form" method="post" action="/dns_provider/commit">
 <fieldset>
   <legend>Domain info</legend>
   <table class="list">
@@ -7,8 +14,9 @@
       <td><label><%= @zone.soarname or 'NA' %> </label></td>
       <td><label>records: </label></td>
       <td><label><%= @zone.rrstotal or 'NA'%></label></td>
-      <td><%= link_to(l(:button_snapshot), { :controller => 'dns_provider', :action => 'snapshot',
-                        :zone => @zone.soarname }, :method => :post, :class => 'icon icon-save') %>
+      <td id="td_commit" rowspan="2" >
+        <!--input type="submit" id="commit" name="commit" value="save changes" onclick="return false;" /-->
+        <%= button_to_remote(:commit, :url => {:action => :commit}, :with => "Form.serialize('record_form')") %>
       </td>
 
     </tr>
@@ -17,17 +25,12 @@
       <td><label><%= @zone.soamname or 'NA' %></label></td>
       <td><label>www target: </label></td>
       <td><label><%= @zone.wwwtargetdata or 'NA' %>  (<%=@zone.wwwtargettype%>)</label></td>
-      <td><%= link_to(l(:button_restore), { :controller => 'dns_provider',
-                        :action => 'restore', :record => @zone.soarname },
-                        :method => :post, :class => 'icon icon-ticket') %>
-      </td>
   </tr>
   </table>
 </fieldset>
 <br/>
 <div class="autoscroll">
-<form action="/">
-<table class="list">
+  <table class="list" style="text-align: left">
   <thead>
     <tr>
 	<th><%=l(:label_rrtype)%></th>
@@ -35,33 +38,32 @@
         <th></th>
     </tr>
   </thead>
-  <tbody>
-<% @records.each_with_index do |record,idx| %>
-  <tr class="<%= cycle("odd", "even") %>">
-	<td class="name"><%= select_tag('rrtype', rrtype_for_select(record), :class => "small") %></td>
-        <td class="name"><input id="record_<%= idx %>" size="60" type="text" name="record_<%= idx %>" value="<%=  rrdata_for_input(record) %>" /></td>
-  <td class="buttons">
-    <%= link_to_remote('', :url => { :controller => 'dns_provider', :action => 'save_record' },
-                           :with => "Form.Element.serialize('record_"+idx.to_s+"')+'&'+Form.Element.serialize('domain')",
-                           :html => { :class => 'icon icon-save' }) %>
-    <%= link_to_remote('', :url => { :controller => 'dns_provider', :action => 'del_record' },
-                           :with => "Form.Element.serialize('record_"+idx.to_s+"')+'&'+Form.Element.serialize('domain')",
-                           :html => { :class => 'icon icon-del' }) %>
-  </td>
-  </tr>
-<% end %>
-<% if @records.length > 0 %>
-  <tr>
-    <td class="name"><%= select_tag('rrtype', rrtype_for_select(@records[-1]), :class => "small") %></td>
-    <td class="name"><input size="60" type="text" name="rrdata_new" /></td>
-    <td class="buttons">
-    <%= link_to_remote( '', :url => { :controller => 'dns_provider', :action => 'new_record' },
-                            :with => "Form.Element.serialize('rrdata_new')+'&'+Form.Element.serialize('domain')",
-                            :html => {:class => 'icon icon-save'}) %>
-    </td>
-  </tr>
-<% end %>
+  <tbody id="records_table">
+    <% @records.each do |record| %>
+      <%= render :partial => 'record', :locals => {:zone => @zone, :record => record} %>
+    <% end %>
+    <%= render :partial => 'empty_record',
+               :locals => { :zone => @zone, :count => (@records.length+1).to_s } %>
   </tbody>
 </table>
+</div>
 </form>
+<div>
+  <% form_remote_tag(:html => { :id => "template_form",
+    :action => url_for(:controller => "dns_provider", :action => "add_template")}) do %>
+    <label>add template</label>
+    <span style="padding-right:5px;">
+      <%= select_tag('rr_template', rrtemplate_for_select(), :class => "small") %>
+    </span>
+    <span style="padding-right:5px;">
+    <%= link_to_remote('preview', :url => {:controller => 'dns_provider', :action => 'preview_template'},
+                                  :with => "Form.serialize('provider_form')") %>
+    &nbsp;|&nbsp;
+    <%= link_to_remote('apply', :url => {:controller => 'dns_provider', :action => 'apply_template'},
+                                :with => "Form.serialize('provider_form')" ) %>
+    </span>
+  <% end %>
+</div>
+  <div id="flash"></div>
+<div id="preview_template">
 </div>

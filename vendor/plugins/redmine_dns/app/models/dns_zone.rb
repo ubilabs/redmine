@@ -17,6 +17,7 @@ class DnsZone < ActiveRecord::Base
     validate ? valid? : true
   end
 
+  column :name, :string
   column :updateddate, :string
   column :soarefresh, :integer
   column :soattl, :integer

@@ -2,14 +2,15 @@ require 'net/http'
 require 'net/https'
 
 class DopoliDnsProvider < DnsProvider
-
+  unloadable
+  
   validates_presence_of :name, :username, :password
   validates_uniqueness_of :username
 
   #cache network access
   @@records = Hash.new
-  @@domains = Array.new
-  @@zones = Hash.new
+  @@zones = Array.new
+  @@zone_status = Hash.new
 
   def credentials()
     return {'s_login' => self.username,'s_pw' => self.password }
@@ -20,21 +21,21 @@ class DopoliDnsProvider < DnsProvider
     #return "https://194.50.187.100/api/call.cgi"
   end
 
-  def get_domains(params)
-    # params: {:userdepth=>'ALL', :limit=>nil, :domain=>nil, :zone=>nil}
-    # gah, more perl...
+  def get_zones(params)
+    # params: {:userdepth=>'ALL', :limit=>nil, :domain=>nil, :dnszone=>nil}
+    unless params[:dnszone].nil? || params[:dnszone][-1].chr == '.'
+      params[:dnszone] = params[:dnszone]+"."
+    end
+    return @@zones[:data] unless @@zones.empty? #FIXME: cache timeout...
+
     userdepth = params[:userdepth] || 'ALL'
 		params.update({'command'=>'QueryDNSZoneList', 'userdepth' => userdepth})
     ret = self.call_remote(params)
-		return ret.fetch("DNSZONE", [])
-	end
-
-  def get_zones(zone)
-    zone = zone+"." unless zone[-1].chr == "."
-		data = {'command' => 'QueryDNSZoneList',
-				'dnszone' => zone}
-		ret = self.call_remote(data)
-		return ret
+		ret = ret.fetch("DNSZONE", [])
+    unless ret.empty?
+      @@zones  = {:ts => Time.new.to_i, :dirty => false, :data => ret }
+    end
+    return ret
 	end
 
   def get_zone_records(zone)
@@ -46,40 +47,48 @@ class DopoliDnsProvider < DnsProvider
       logger.info("Fetching #{state} records stored #{age} seconds ago from cache for zone #{zone}")
       return @@records[zone][:data]
     end
+
+    #cache miss
 		data = {'command' => 'QueryDNSZoneRRList','dnszone' => zone}
 		ret = self.call_remote(data)
     return [] unless ret.has_key?("RR")
 
-    records = Array.new
-    ret["RR"].each do |r|
-      parts = r.split()
+    records = Set.new
+    ret["RR"].each do |v|
+      key = v.keys[0]
+      parts = v.values[0].split()
+      #puts "Got parts from RR #{parts.to_json}"
       #check for X-HTTP REDIRECT (parts.length will be 6)
-      if parts.length == 6
-        parts = [parts[0], parts[1], parts[3], "#{parts[3]}-#{parts[4]}", parts[5] ]
-      end
-      records.push(
-          DnsRecord.new(:source => parts[0], :ttl => parts[1],
-                        :rrtype => parts[3], :target => parts[4])
-                    ) if parts.length == 5
+      next if parts[3] == 'SOA' #don't show SOA entry
+      r = DnsRecord.new(:rrid => key, :source => parts[0], :ttl => parts[1],
+                          :rrtype => parts[3], :target => parts.slice(4, parts.length-4).join(" "))
+      records.add(r)
     end
-    @@records[zone] = {:ts => Time.new.to_i, :dirty => false, :data => records }
+    @@records[zone] = {:ts => Time.new.to_i, :dirty => false,
+                       :new => Set.new, :deleted => Set.new, :updated => Set.new, :data => records }
     logger.info("stored records in class var @@records")
     return records
 	end
 
   def get_zone_status(zone)
     zone = zone+"." unless zone[-1].chr == "."
+    if @@zone_status.has_key?(zone)
+      return @@zone_status[zone]
+    end
 		data = {'command' => 'StatusDNSZone',
 				'dnszone' => zone}
 		ret = self.call_remote(data)
     if ret["CODE"][0].to_i == 545
-      puts "this is an external domain, filling in fake info"
+      #"this is most likely an external domain, filling in fake info"
       return DnsZone.new(:soamname => 'EXTERNAL')
     end
     res = Hash.new
     ret.each do |k,v| res[k.downcase] = v[0] end
     res = res.reject{ |k,v| !DnsZone.column_names.include?(k) }
-	  return DnsZone.new(res)
+    res[:name] = zone
+	  z = DnsZone.new(res)
+    @@zone_status[zone] = z
+    return z
 	end
 
   def add_record(zone, params)
@@ -104,6 +113,35 @@ class DopoliDnsProvider < DnsProvider
 		ret = self.call_remote(data)
   end
 
+  def commit()
+    #commit from cache to webservice
+    #the API sucks:
+    # * rrX, rrY, rrZ replaces ALL records
+    # * delrr0, delrr1 will delete records (which? presumable rr0,rr1)
+    # * addrr0, addrr1 will add records
+    # -> a modify is therefore delrrX +  addrrX to retain existing records
+
+    #alternatively push ALL records via rrX syntax (thus rewriting the whole zone)
+  end
+
+  #FIXME: the whole thing is probably not worth it, just implement commit()
+  # and grab everything whats currently in the form..., for this to work you would
+  # need to delete changed records from @@records[zone] and merge the :data,
+  # :updated and :new arrays/sets for display --- too much work ;)
+
+  def update_cache(zone,  record, cache_type)
+    # update the cache with records which will sent by commit()
+    # cache_type is one of 'new', 'updated', 'deleted'
+    id = record.rrid
+    if cache_type == 'new'
+      @@records[zone][:new].add(record)
+    elsif cache_type == 'updated'
+      @@records[zone][:updated].add(record)
+    elif cache_type == 'deleted'
+      @@records[zone][:deleted].add(record)
+    end
+  end
+
   protected
   def parse_response(data)
     ret = Hash.new()
@@ -118,9 +156,17 @@ class DopoliDnsProvider < DnsProvider
       if m
         key, idx = m.captures()
         if ret.has_key?(key)
-          ret[key].push(kv[1].strip())
+          if key == "RR"
+            ret[key].push({"rr"+idx => kv[1].strip()})
+          else
+            ret[key].push(kv[1].strip())
+          end
         else
-          ret[key] = [kv[1].strip()]
+          if key == "RR"
+            ret[key] = [{"rr"+idx => kv[1].strip()}]
+          else
+            ret[key] = [kv[1].strip()]
+          end
         end
       else
         ret[kv[0]] = [kv[1].strip()]
@@ -130,6 +176,7 @@ class DopoliDnsProvider < DnsProvider
   end
 
 	def call_remote(data)
+    #FIXME: verify certs if possible
 		data.update(self.credentials)
     uri = URI.parse(self.api_url)
     params = data.collect{|k,v| "#{k}=#{v}" }.join("&")

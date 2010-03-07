@@ -2,6 +2,38 @@ require 'net/http'
 require 'uri'
 require 'optparse'
 
+module ActiveResource
+  module Formats
+
+  end
+end
+
+class DopolyResource < ActiveResource::Base
+  self.site = "https://api.1api.net/api/ext/xdns.cgi"
+  @command = ''
+
+  def self.command
+      puts "command accessed"
+    return
+  end
+
+  def self.command=(name)
+    puts "command= called"
+  end
+  
+    # Builds the query string for the request.
+  def self.query_string(options)
+    qs = "?command=#{@command}"
+    qs += "&#{options.to_query}" unless options.nil? || options.empty?
+    return qs
+  end
+
+  def self.collection_path(prefix_options, query_options)
+    prefix_options, query_options = split_options(prefix_options) if query_options.nil?
+    return query_string(query_options)
+  end
+end
+
 def parse_response(data)
 	ret = Hash.new()
 	re_prop = /property\[(.*?)\]\[(.*?)\]/i
@@ -101,36 +133,3 @@ class Registrar
 	end
 end
 
-
-if __FILE__ == $0
-	options = {}
-	OptionParser.new do |opts|
-		opts.banner = "Example: domresell.rb -a add -d foo.net. -r 'one.foo.net 600 A 12.12.12.12'"
-		opts.on('-d', '--domain DOMAIN', 'Domain to operate on.') do |d|
-			if not /.*\.$/.match(d)
-				d = d+'.'
-			end
-			options[:domain] = d
-		end
-		opts.on('-a', '--action ACTION', 'Action is "add" or "del" or "list"') do |a|
-			options[:action] = a
-		end
-		opts.on('-r', '--resource RES', 'DNS resource to add or delete') do |r|
-			#FIXME: catching errors
-			res = r.split
-		    res[1] = res[1].to_i
-			options[:resource] = res
-		end
-	end.parse!
-	
-	r = Registrar.new( 'sumaato.net', 'LQDNCue6')
-	if options[:action] == 'add'
-		r.addDNSResource(options[:domain], options[:resource])
-	elsif options[:action] == 'del'
-		r.delDNSResource(options[:domain], options[:resource])
-	elsif options[:action] == 'list'
-		r.getZoneRRList(options[:domain])
-	else
-		puts "Unknown action #{options[:action]}"
-	end
-end

@@ -1,16 +1,17 @@
 <div class="contextual">
-<%= link_to l(:label_dns_add), {:controller => 'dns_provider', :action => 'add'}, :class => 'icon icon-add' %>
+<%= link_to l(:label_dns_settings), {:controller => 'dns_settings', :action => 'index'}, :class => 'icon icon-add' %>
 </div>
 <h2>Dns Providers</h2>
 
-<% form_remote_tag(:html => { :action => url_for(:controller => "dns_provider", :action => "select_provider")}) do %>
+<form id="provider_form" action="/dns_provider">
   <fieldset><legend><%= l(:label_filter_plural) %></legend>
     <label>provider :</label>
-    <%= select_tag 'provider',providers_for_select(@providers),
-      :class => "small", :onchange => "this.form.submit(); return false;"  %>
-<% end %>
+    <%= select_tag( 'provider',providers_for_select(@providers), :class => "small") %>
+    <%= observe_field(:provider, :url => {:action => :select_provider}, :with => "Form.serialize('provider_form')") %>
+
     <label><%= l(:label_domain) %>:</label>
-    <%= select_tag 'domain', domains_for_select(@domains), :class => "small" %>
-    <%=  observe_field(:domain, :url => {:action => :select_domain}, :with =>"Form.Element.serialize('provider')+'&'+Form.Element.serialize('domain')", :update => :zone_status) %>
+    <%= select_tag('domain', domains_for_select(@domains), :class => "small") %>
+    <%=  observe_field(:domain, :url => {:action => :select_domain}, :with => "Form.serialize('provider_form')", :update => :zone_status) %>
   </fieldset>
+</form>
 <div id="zone_status"></div>

@@ -1,0 +1,13 @@
+<tr id="row_<%= record.rrid %>" class="<%= cycle("odd", "even") %>">
+	<td class="name"><%= select_tag('rrtype'+record.rrid, rrtype_for_select(record), :class => "small") %></td>
+        <%=  observe_field('rrtype'+record.rrid, :function => "Form.Element.setValue('"+record.rrid+"','"+@zone.name+" "+@zone.soattl.to_s+" IN '+value)") %>
+        <td class="name"><input size="65" type="text" name="<%= record.rrid %>" id="<%= record.rrid %>" value="<%=  rrdata_for_input(record) %>" /></td>
+  <td id="tr_<%= record.rrid %>" class="buttons">
+    <%= link_to_remote('', :url => { :controller => 'dns_provider', :action => 'save_record' },
+                           :with => "Form.serialize('provider_form')+'&'+Form.Element.serialize('"+record.rrid+"')",
+                           :html => { :class => 'icon icon-save' }) %>
+    <%= link_to_remote('', :url => { :controller => 'dns_provider', :action => 'del_record' },
+                           :with => "Form.serialize('provider_form')+'&input='+Form.Element.serialize('"+record.rrid+"')",
+                           :html => { :class => 'icon icon-del' }) %>
+  </td>
+</tr>
