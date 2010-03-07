@@ -51,13 +51,9 @@ class DnsProviderController < ApplicationController
     @zone = params[:domain]
     id, data = params[:input].split('=')
     render(:update) do |page|
-      page << "Element.setStyle('td_commit', {backgroundColor: 'green'});"
+      page << "Element.setStyle('td_commit', {backgroundColor: 'red'});"
       page.remove('row_'+id)
     end
-  end
-
-  def save_record
-
   end
 
   def new_record
@@ -68,20 +64,23 @@ class DnsProviderController < ApplicationController
     
     record = validate_raw_recorddata(id, data)
     render(:update) do |page|
-      page.insert_html(:top, 'flash', "<p>"+@errors.collect { |attr,msg| "#{attr} - #{msg}" }.join("<br/>")+"</p>")
+      errmsg = "<div id='rr_errors'><p>"+@errors.collect { |attr,msg| "#{attr} - #{msg}" }.join("<br/>")+"</p>"
+      page.replace('rr_errors', "<div id=\"rr_errors\">#{errmsg}</div>" )
     end and return unless record
 
     #TODO:save record in cache
     render(:update) do |page|
-      page << "Element.setStyle({backgroundColor: 'green'});"
+      page << "Element.setStyle('td_commit', {backgroundColor: 'red'});"
       page.replace("row_"+id, :partial => 'record', :locals => {:record => record})
       page.insert_html( :bottom, 'records_table', :partial => 'empty_record',
           :locals => { :count => (count.to_i+1).to_s})
     end
   end
 
-  def add_template
-    
+  def load_template
+    template = DnsTemplate.find(params[:rr_template])
+    template.records.each do |r| puts "TEMPLATE RECORD: #{r}" end
+    #render :partial => ''
   end
 
   def validate_raw_recorddata(id, stringval)
