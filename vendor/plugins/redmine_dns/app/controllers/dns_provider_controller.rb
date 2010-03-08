@@ -10,6 +10,9 @@ class DnsProviderController < ApplicationController
     if @providers.length == 1 #preseed the next select
       @provider = @providers[0]
       @domains = @provider.get_zones({})
+    elsif
+      @providers.length == 0
+      redirect_to :controller => "dns_settings"
     end
     #render :action => 'index'
   end
@@ -33,14 +36,14 @@ class DnsProviderController < ApplicationController
     if params[:provider] && params[:zone]
       @provider = DnsProvider.find(params[:provider])
       @domains = @provider.get_zones({})
-      render :action => 'index' unless request.xhr?
+      render :action => 'index'
     end
   end
 
   def select_domain
     @provider = DnsProvider.find(params[:provider])
     puts "GOT domain #{params[:domain]} with type #{params[:domain].class}"
-    redirect_to :action => index and return if params[:domain].blank?
+    render :text => "" and return if params[:domain].blank?
     @zone = @provider.get_zone_status(params[:domain])
     @records = @provider.get_zone_records(params[:domain])
     @length = @records.length
@@ -71,7 +74,7 @@ class DnsProviderController < ApplicationController
     #TODO:save record in cache
     render(:update) do |page|
       page << "Element.setStyle('td_commit', {backgroundColor: 'red'});"
-      page.replace("row_"+id, :partial => 'record', :locals => {:records => [record]})
+      page.replace("row_"+id, :partial => 'records', :locals => {:records => [record]})
       page.insert_html( :bottom, 'records_table', :partial => 'empty_record',
           :locals => { :count => (count.to_i+1).to_s})
     end
@@ -79,7 +82,7 @@ class DnsProviderController < ApplicationController
 
   def load_template
     zone_name = params[:zone]
-    redirect_to :action => index and return if params[:rr_template].blank?
+    render :text => ""  and return if params[:rr_template].blank?
     template = DnsTemplate.find(params[:rr_template])
     @records = []
     template.records.each_with_index do |r,idx|
