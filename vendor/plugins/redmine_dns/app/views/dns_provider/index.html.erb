@@ -11,7 +11,8 @@
 
     <label><%= l(:label_domain) %>:</label>
     <%= select_tag('domain', domains_for_select(@domains), :class => "small") %>
-    <%=  observe_field(:domain, :url => {:action => :select_domain}, :with => "Form.serialize('provider_form')", :update => :zone_status) %>
+    <%=  observe_field(:domain, :url => {:action => :select_domain},
+                       :with => "Form.serialize('provider_form')", :update => :zone_status) %>
   </fieldset>
 </form>
 <div id="zone_status"></div>

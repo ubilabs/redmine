@@ -45,7 +45,7 @@ class DopoliDnsProvider < DnsProvider
       age = Time.new.to_i - @@records[zone][:ts]
       state = @@records[zone][:dirty] ? 'changed' : 'unchanged'
       logger.info("Fetching #{state} records stored #{age} seconds ago from cache for zone #{zone}")
-      return @@records[zone][:data]
+      return @@records[zone][:data] #FIXME: cache timeout...
     end
 
     #cache miss
@@ -57,8 +57,7 @@ class DopoliDnsProvider < DnsProvider
     ret["RR"].each do |v|
       key = v.keys[0]
       parts = v.values[0].split()
-      #puts "Got parts from RR #{parts.to_json}"
-      #check for X-HTTP REDIRECT (parts.length will be 6)
+
       next if parts[3] == 'SOA' #don't show SOA entry
       r = DnsRecord.new(:rrid => key, :source => parts[0], :ttl => parts[1],
                           :rrtype => parts[3], :target => parts.slice(4, parts.length-4).join(" "))
@@ -73,7 +72,7 @@ class DopoliDnsProvider < DnsProvider
   def get_zone_status(zone)
     zone = zone+"." unless zone[-1].chr == "."
     if @@zone_status.has_key?(zone)
-      return @@zone_status[zone]
+      return @@zone_status[zone] #FIXME: cache timeout...
     end
 		data = {'command' => 'StatusDNSZone',
 				'dnszone' => zone}
@@ -114,32 +113,18 @@ class DopoliDnsProvider < DnsProvider
   end
 
   def commit()
-    #commit from cache to webservice
+    #commit from cache to webservice (UPDATE: dont't)
     #the API sucks:
     # * rrX, rrY, rrZ replaces ALL records
     # * delrr0, delrr1 will delete records (which? presumable rr0,rr1)
     # * addrr0, addrr1 will add records
     # -> a modify is therefore delrrX +  addrrX to retain existing records
 
-    #alternatively push ALL records via rrX syntax (thus rewriting the whole zone)
-  end
-
-  #FIXME: the whole thing is probably not worth it, just implement commit()
-  # and grab everything whats currently in the form..., for this to work you would
-  # need to delete changed records from @@records[zone] and merge the :data,
-  # :updated and :new arrays/sets for display --- too much work ;)
-
-  def update_cache(zone,  record, cache_type)
-    # update the cache with records which will sent by commit()
-    # cache_type is one of 'new', 'updated', 'deleted'
-    id = record.rrid
-    if cache_type == 'new'
-      @@records[zone][:new].add(record)
-    elsif cache_type == 'updated'
-      @@records[zone][:updated].add(record)
-    elif cache_type == 'deleted'
-      @@records[zone][:deleted].add(record)
-    end
+    # push ALL records via rrX syntax (thus rewriting the whole zone)...
+    # thats what we do here. The cache is for reads and "write-thru", i.e. all
+    # VISIBLE records from the UI will be pushed vi the rrX syntax and the whole zone
+    # is reloaded from the remote end. This way the UI is always in sync.
+    # TODO: implement ;)
   end
 
   protected
