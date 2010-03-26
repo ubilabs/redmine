@@ -50,6 +50,20 @@ class DnsRecord < ActiveRecord::Base
     columns << ActiveRecord::ConnectionAdapters::Column.new(name.to_s, default, sql_type.to_s, null)
   end
 
+  def <=>(other)
+    order = ['NS', 'MX', 'A', 'AAAA', 'CNAME', 'TXT', 'SRV', 'SPF', 'X-HTTP', 'X-SMTP']
+    ro = order.index(other.rrtype)
+    rm = order.index(self.rrtype)
+    if rm < ro
+      ret = -1
+    elsif rm > ro
+        ret = 1
+    else
+      ret = 0
+    end
+    return ret
+  end
+
   column :rrid, :string
   column :source, :string
   column :ttl, :string
@@ -57,3 +71,7 @@ class DnsRecord < ActiveRecord::Base
   column :target, :string
 
 end
+
+
+#p = DnsProvider.find(1)
+#rrs = p.get_zone_records('cellecity.de.')

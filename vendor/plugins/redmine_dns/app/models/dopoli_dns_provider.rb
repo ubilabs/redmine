@@ -63,6 +63,9 @@ class DopoliDnsProvider < DnsProvider
                           :rrtype => parts[3], :target => parts.slice(4, parts.length-4).join(" "))
       records.add(r)
     end
+    records = records.to_a
+    records.sort!
+    
     @@records[zone] = {:ts => Time.new.to_i, :dirty => false,
                        :new => Set.new, :deleted => Set.new, :updated => Set.new, :data => records }
     logger.info("stored records in class var @@records")
