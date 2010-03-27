@@ -17,20 +17,6 @@ class DnsProviderController < ApplicationController
     #render :action => 'index'
   end
 
-  def commit
-    params.each do |k,v|
-      m = /^rr(\d+)/.match(k)
-      puts "Got RR from entry: #{v}" unless (m.nil? || v.blank?)
-      m = /^tmpl(\d+)/.match(k)
-      puts "Got RR from template: #{v}" unless (m.nil? || v.blank?)
-    end
-    #TODO: call Provider.commit(filtered_records...)
-    
-    render(:update) do |page|
-      page << "Element.setStyle('td_commit', {backgroundColor: 'green'});"
-    end
-  end
-
   def select_provider
     @providers = DnsProvider.providers()
     if params[:provider] && params[:zone]
@@ -42,7 +28,7 @@ class DnsProviderController < ApplicationController
 
   def select_domain
     @provider = DnsProvider.find(params[:provider])
-    puts "GOT domain #{params[:domain]} with type #{params[:domain].class}"
+    #puts "GOT domain #{params[:domain]} with type #{params[:domain].class}"
     render :text => "" and return if params[:domain].blank?
     @zone = @provider.get_zone_status(params[:domain])
     @records = @provider.get_zone_records(params[:domain])
@@ -71,7 +57,6 @@ class DnsProviderController < ApplicationController
       page.replace('rr_errors', "<div id=\"rr_errors\">#{errmsg}</div>" )
     end and return unless record
 
-    #TODO:save record in cache
     render(:update) do |page|
       page << "Element.setStyle('td_commit', {backgroundColor: 'red'});"
       page.replace("row_"+id, :partial => 'records', :locals => {:records => [record]})
@@ -96,6 +81,44 @@ class DnsProviderController < ApplicationController
     render :partial => 'records'
   end
 
+  def commit
+    zone_name = params[:zone]
+    provider_id = params[:provider]
+
+    # create a new array of DnsRecords to validate the data, new
+    # rrid's are generated from rr0 to rrN
+    id = 0; rrs = []
+    params.each do |k,v|
+      m = /^rr(\d+)/.match(k)
+      unless (m.nil? || v.blank?)
+        record =  validate_raw_recorddata('rr'+id.to_s, v)
+        rrs.push(record) and id += 1 if record #TODO: if record is nil there was an error
+        next
+      end
+      
+      m = /^tmpl(\d+)/.match(k)
+      unless (m.nil? || v.blank?)
+        record = validate_raw_recorddata('rr'+id.to_s, v)
+        rrs.push(record) and id += 1 if record #TODO: if record is nil there was an error
+        next
+      end
+      #puts "Got other parameter: #{k} -> #{v}" if (m.nil?)
+    end
+
+    #puts "DEBUG: record for commit #{rrs.inspect}"
+    provider = DnsProvider.find(provider_id)
+    if provider
+      rrs.sort!
+      provider.commit(zone_name, rrs)
+    else
+      #TODO: errors
+    end
+
+    render(:update) do |page|
+      page << "Element.setStyle('td_commit', {backgroundColor: 'white'});"
+    end
+  end
+  
   def validate_raw_recorddata(id, stringval)
     parts = stringval.nil? ? nil : stringval.split()
     if parts.nil? || parts.length < 5

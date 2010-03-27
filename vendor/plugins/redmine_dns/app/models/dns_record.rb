@@ -28,6 +28,8 @@ class DnsRecord < ActiveRecord::Base
       unless match
         "X-HTTP takes the form of either 'FRAME' or 'REDIRECT' and an URL"
       end
+    when 'NS' then
+      #check for dodns.net?
     else
       record.errors.add(:rrtype, "Unknown RR type #{record.rrtype}.")
     end
@@ -48,6 +50,10 @@ class DnsRecord < ActiveRecord::Base
   
   def self.column(name, sql_type=nil, default=nil, null=true)
     columns << ActiveRecord::ConnectionAdapters::Column.new(name.to_s, default, sql_type.to_s, null)
+  end
+
+  def to_s
+    "#{self.source} #{self.ttl} IN #{self.rrtype} #{self.target}"
   end
 
   def <=>(other)

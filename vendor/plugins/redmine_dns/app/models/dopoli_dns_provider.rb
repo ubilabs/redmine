@@ -68,7 +68,7 @@ class DopoliDnsProvider < DnsProvider
     
     @@records[zone] = {:ts => Time.new.to_i, :dirty => false,
                        :new => Set.new, :deleted => Set.new, :updated => Set.new, :data => records }
-    logger.info("stored records in class var @@records")
+    logger.info("stored #{records.length} records in class var @@records")
     return records
 	end
 
@@ -115,19 +115,19 @@ class DopoliDnsProvider < DnsProvider
 		ret = self.call_remote(data)
   end
 
-  def commit()
-    #commit from cache to webservice (UPDATE: dont't)
-    #the API sucks:
-    # * rrX, rrY, rrZ replaces ALL records
-    # * delrr0, delrr1 will delete records (which? presumable rr0,rr1)
-    # * addrr0, addrr1 will add records
-    # -> a modify is therefore delrrX +  addrrX to retain existing records
-
+  def commit(zone, records)
     # push ALL records via rrX syntax (thus rewriting the whole zone)...
-    # thats what we do here. The cache is for reads and "write-thru", i.e. all
-    # VISIBLE records from the UI will be pushed vi the rrX syntax and the whole zone
-    # is reloaded from the remote end. This way the UI is always in sync.
-    # TODO: implement ;)
+    data = {'command' => 'UpdateDNSZone',
+				'dnszone' => zone }
+    records.each do |r| data[r.rrid] = "#{r}" end
+    ret = self.call_remote(data)
+    #FIXME: report errors if any (return value?, raise?)
+    logger.info("Server response to commit() for zone #{zone}: #{ret.inspect}")
+
+    #invalidate cache and refetch
+    @@records.delete(zone)
+    get_zone_records(zone)
+    #FIXME: compare cache with records and raise error if they don't match
   end
 
   protected
@@ -180,4 +180,3 @@ class DopoliDnsProvider < DnsProvider
 		return parse_response(resp.body)
 	end
 end
-

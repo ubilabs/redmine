@@ -16,7 +16,7 @@
       <td><label><%= @zone.rrstotal or 'NA'%></label></td>
       <td id="td_commit" rowspan="2" >
         <%= button_to_remote(:commit, :url => {:action => :commit},
-                             :with => "Form.serialize('record_form')+'&'+Form.serialize('template_form')") %>
+                             :with => "Form.serialize('provider_form')+'&'+Form.serialize('record_form')+'&'+Form.serialize('template_form')") %>
         <input type="hidden" name="zone" value="<%= @zone.name %>" />
       </td>
 
