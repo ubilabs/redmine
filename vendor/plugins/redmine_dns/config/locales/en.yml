@@ -11,6 +11,9 @@ en:
   label_domain: "domain"
   label_template_name: "name"
   label_template_desc: "description"
+  label_snapname: "name"
+  label_snapdate: "date"
+  label_snap_reccount: "number of records"
   button_snapshot: "take snapshot"
   button_restore: "load snapshot"
 
@@ -27,3 +30,6 @@ de:
   label_domain: "Domäne"
   label_template_name: "Name"
   label_template_desc: "Beschreibung"
+  label_snapname: "Name"
+  label_snapdate: "Datum"
+  label_snap_reccount: "Anzahl der Einträge"

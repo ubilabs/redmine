@@ -8,7 +8,8 @@ class DnsSettingsController < ApplicationController
   def index
     @providers = DnsProvider.find(:all)
     @templates = DnsTemplate.find(:all)
-
+    @snapshots = DnsSnapshot.find(:all)
+    
     #set up a fake zone for the template rows
     @zone = DnsZone.new(:name =>'#{zone}', :soattl =>3600)
   end
@@ -28,28 +29,18 @@ class DnsSettingsController < ApplicationController
       redirect_to :action => :index
   end
 
-  def new_template
-    puts "GOT new template"
-    unless params[:template].nil?
-      records = []
-      params[:template].collect do |k,v| records.push(v) unless (v.empty? ||v.nil?) end
-    end
-    template = DnsTemplate.create(
-                :name => params["dns_template"]["name"],
-                :desc => params["dns_template"]["desc"],
-                :records => records)
-    template.save!
-    if template.valid?
-      template.save!
-      redirect_to :action => :index
-    end
-  end
-
   def del_template
     DnsTemplate.delete(params[:template])
     #redirect_to :action => :index
     render(:update) do |page|
       page.remove('template_row_'+params[:template])
+    end
+  end
+
+  def del_snapshot
+    DnsSnapshot.delete(params[:snapshot])
+    render(:udpate) do |page|
+      page.remove('snapshot_row_'+params[:snapshot])
     end
   end
 end

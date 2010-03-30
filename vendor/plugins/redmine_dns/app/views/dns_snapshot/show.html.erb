@@ -1,0 +1,25 @@
+<p>snapshot</p>
+<div class="box tabular">
+  <% form_for :dns_snapshot, :url => { :action => :save_or_restore}  do |f| %>
+  <%= f.error_messages %>
+  <p style="font-size: 1.5em">
+    <%= @snap.name %>
+    from <%= @snap.date.to_s %>
+  </p>
+  <p>
+    <input type="submit" value="Save" name="save"/>
+    <input type="submit" value="Restore" name="restore"/>
+    <input type="submit" value="Cancel" name="cancel"/>
+  </p>
+  <p style="padding-left: 8px">
+  <table>
+    <tbody>
+    <% @snap.records.each_with_index do |rec, count| %>
+      <%=  render :partial => 'snapshot_record',
+                  :locals => {:count=>count.to_s, :snapshot => @snap, :record => rec } %>
+    <% end %>
+    </tbody>
+  </table>
+  </p>
+<% end %>
+</div>

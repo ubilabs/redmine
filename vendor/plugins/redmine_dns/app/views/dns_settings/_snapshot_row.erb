@@ -1,0 +1,12 @@
+<tr id="snapshot_row_<%=s.id %>" class="<%= cycle("odd", "even") %>">
+  <td><%= s.zone %></td>
+  <td><%= s.name %></td>
+  <td><%= s.date %></td>
+  <td><%= s.records.length.to_s %></td>
+  <td class="buttons">
+    <%= link_to '', {:controller => 'dns_snapshot', :action => 'show', :id => s.id }, :class => 'icon icon-edit' %>
+    <%= link_to_remote('', :url => { :controller => 'dns_settings', :action => 'del_snapshot' },
+                       :with => "'?template="+s.id.to_s+"'",
+                       :html => { :class => 'icon icon-del' }) %>
+  </td>
+</tr>

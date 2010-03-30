@@ -1,0 +1,8 @@
+<tr id="row_rr<%= count %>">
+    <td  class="name">
+    <%= select_tag('rrtyperr'+count, rrtype_for_select(record), :class => "small") %></td>
+    <%=  observe_field('rrtyperr'+count, :function => "Form.Element.setValue('rr"+count+"','"+snapshot.zone+" 3600 IN '+value)") %>
+    <td class="name"><input size="65" type="text" name="snapshot[rr<%= count %>]" id="rr<%= count %>" value="<%= record.to_s if record %>"/></td>
+    <td class="buttons">
+    </td>
+  </tr>
