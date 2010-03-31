@@ -1,5 +1,6 @@
 require 'net/http'
 require 'net/https'
+require 'openssl'
 
 class DopoliDnsProvider < DnsProvider
   unloadable
@@ -94,10 +95,7 @@ class DopoliDnsProvider < DnsProvider
 	end
 
   def add_record(zone, params)
-    rr = DnsRecord.new(params) #use AR validations
-    # @params {:source, :ttl, :rrtype, :target}
-    #FIXME: convert X-HTTP-REDIRECT
-    
+    rr = DnsRecord.new(params) #use AR validations    
 		#fex: ['foo.example.net.', 3600, 'A',  '123.123.123.123']
 		resource = "#{rr.source} #{rr.ttl} IN #{rr.rrtype} #{rr.target}"
 		data = {'command' => 'UpdateDNSZone',
@@ -171,7 +169,10 @@ class DopoliDnsProvider < DnsProvider
     params = URI.encode(params)
 		begin
       http = Net::HTTP.new(uri.host, uri.port)
+      http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+      http.ca_file = File.join(File.dirname(__FILE__), '../../config/thawte.pem')
       http.use_ssl = true
+
       resp = http.get(uri.path+"?"+params)
 		rescue Exception => e
 			logger.error("error fetching from dopoli #{e}")
