@@ -1,4 +1,4 @@
-class DnsSnapshotController < ApplicationController
+class DnsSnapshotController < DnsController
   unloadable
   
   layout 'admin'
@@ -7,7 +7,7 @@ class DnsSnapshotController < ApplicationController
 
   def create
     zone_name = params[:zone]
-
+    provider = params[:provider]
     # create a new array of DnsRecords to validate the data, new
     # rrid's are generated from rr0 to rrN
     id = 0; rrs = []
@@ -21,7 +21,7 @@ class DnsSnapshotController < ApplicationController
     end
 
     #FIXME: ask user for :name
-    @snap = DnsSnapshot.new(:zone => zone_name, :records => rrs,
+    @snap = DnsSnapshot.new(:zone => zone_name, :records => rrs, :provider_id => provider,
                             :date => DateTime.now, :name => "snapshot for #{zone_name}")
 
     if @snap.save!
@@ -38,22 +38,14 @@ class DnsSnapshotController < ApplicationController
     @snap.records.sort!
   end
 
-  def save_or_restore
-  
-  end
-
-  def validate_raw_recorddata(id, stringval)
-    parts = stringval.nil? ? nil : stringval.split()
-    if parts.nil? || parts.length < 5
-      @errors = {:all => "Missing values..."}
-      return nil
+  def restore
+    if params[:commit] == "Cancel"
+      redirect_to :controller => :dns_settings, :action => :index
+    else
+      provider = DnsProvider.find(params[:provider])
+      snap = DnsSnapshot.find_by_zone(params[:zone])
+      provider.commit(params[:zone], snap.records)
+      redirect_to :controller => :dns_settings, :action => :index
     end
-    r = DnsRecord.new(:rrid => id, :source => parts[0], :ttl => parts[1],
-                          :rrtype => parts[3], :target => parts.slice(4, parts.length-4).join(" "))
-    unless r.valid? #this calls r.validate
-      @errors = r.errors
-      return nil
-    end
-    return r
   end
 end
