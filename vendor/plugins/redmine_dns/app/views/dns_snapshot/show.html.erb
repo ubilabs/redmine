@@ -1,3 +1,4 @@
+<%= link_to l(:label_back), {:controller => 'dns_settings', :action => 'index'} %>
 <p>snapshot</p>
 <div class="box tabular">
   <% form_for :dns_snapshot, :url => { :action => :save_or_restore}  do |f| %>

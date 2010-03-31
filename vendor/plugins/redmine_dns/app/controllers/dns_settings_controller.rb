@@ -31,7 +31,6 @@ class DnsSettingsController < ApplicationController
 
   def del_template
     DnsTemplate.delete(params[:template])
-    #redirect_to :action => :index
     render(:update) do |page|
       page.remove('template_row_'+params[:template])
     end
@@ -39,7 +38,7 @@ class DnsSettingsController < ApplicationController
 
   def del_snapshot
     DnsSnapshot.delete(params[:snapshot])
-    render(:udpate) do |page|
+    render(:update) do |page|
       page.remove('snapshot_row_'+params[:snapshot])
     end
   end

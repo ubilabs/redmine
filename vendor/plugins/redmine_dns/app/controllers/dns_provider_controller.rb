@@ -71,10 +71,9 @@ class DnsProviderController < ApplicationController
     template = DnsTemplate.find(params[:rr_template])
     @records = []
     template.records.each_with_index do |r,idx|
-      raw = r.gsub(/#\{\s*(\w+)\s*\}/) { zone_name }
-      parts = raw.split()
-      r = DnsRecord.new(:rrid => 'tmpl'+idx.to_s, :source => parts[0], :ttl => parts[1],
-                        :rrtype => parts[3], :target => parts.slice(4, parts.length-4).join(" "))
+      source = r.source.gsub(/#\{\s*(\w+)\s*\}/) { zone_name }
+      r = DnsRecord.new(:rrid => 'tmpl'+idx.to_s, :source => source, :ttl => r.ttl,
+                        :rrtype => r.rrtype, :target => r.target)
       @records.push(r)
       @zone = DnsZone.new(:name =>zone_name, :soattl =>3600) #fake zone
     end

@@ -1,3 +1,4 @@
+<%= link_to l(:label_back), {:controller => 'dns_settings', :action => 'index'} %>
 <p>new template</p>
 <div class="box tabular">
   <% form_for :dns_template, :url => { :action => :create}  do |f| %>
@@ -9,7 +10,7 @@
   </p>
   <p>
     <label><%= l(:label_template_desc) %>:</label>
-    <%= f.text_area :desc, :rows => 4 %>
+    <%= f.text_area :desc, :rows => 4, :value => @tmpl.desc if @tmpl%>
     <!--textarea rows="3" cols="39" id="template_desc" name="desc" ></textarea-->
  </p>
   <p>

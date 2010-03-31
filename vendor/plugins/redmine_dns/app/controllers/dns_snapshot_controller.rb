@@ -1,6 +1,6 @@
 class DnsSnapshotController < ApplicationController
   unloadable
-
+  
   layout 'admin'
   before_filter :require_admin
 
@@ -35,6 +35,7 @@ class DnsSnapshotController < ApplicationController
 
   def show
     @snap = DnsSnapshot.find(params[:id])
+    @snap.records.sort!
   end
 
   def save_or_restore
