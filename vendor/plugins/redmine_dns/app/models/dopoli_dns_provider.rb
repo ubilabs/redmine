@@ -2,6 +2,18 @@ require 'net/http'
 require 'net/https'
 require 'openssl'
 
+#hack Net:HTTP to support cipher selection
+module Net
+    class HTTP
+        def set_context=(value)
+            @ssl_context = OpenSSL::SSL::SSLContext.new(value)
+        end
+        if RUBY_VERSION =~ /^1\.8/
+            ssl_context_accessor :ciphers
+        end
+    end
+end
+
 class DopoliDnsProvider < DnsProvider
   unloadable
   
@@ -18,8 +30,8 @@ class DopoliDnsProvider < DnsProvider
   end
 
   def api_url()
-    return "https://api.1api.net/api/ext/xdns.cgi"
-    #return "https://194.50.187.100/api/call.cgi"
+    #return "https://api.1api.net/api/ext/xdns.cgi"
+    return "https://api.domainreselling.de/api/call.cgi"
   end
 
   def get_zones(params)
@@ -30,14 +42,14 @@ class DopoliDnsProvider < DnsProvider
     return @@zones[:data] unless @@zones.empty? #FIXME: cache timeout...
 
     userdepth = params[:userdepth] || 'ALL'
-		params.update({'command'=>'QueryDNSZoneList', 'userdepth' => userdepth})
+    params.update({'command'=>'QueryDNSZoneList', 'userdepth' => userdepth})
     ret = self.call_remote(params)
-		ret = ret.fetch("DNSZONE", [])
+    ret = ret.fetch("DNSZONE", [])
     unless ret.empty?
       @@zones  = {:ts => Time.new.to_i, :dirty => false, :data => ret }
     end
     return ret
-	end
+  end
 
   def get_zone_records(zone)
     #check that zone ends with a dot
@@ -50,8 +62,8 @@ class DopoliDnsProvider < DnsProvider
     end
 
     #cache miss
-		data = {'command' => 'QueryDNSZoneRRList','dnszone' => zone}
-		ret = self.call_remote(data)
+    data = {'command' => 'QueryDNSZoneRRList','dnszone' => zone}
+    ret = self.call_remote(data)
     return [] unless ret.has_key?("RR")
 
     records = Set.new
@@ -61,7 +73,7 @@ class DopoliDnsProvider < DnsProvider
 
       next if parts[3] == 'SOA' #don't show SOA entry
       r = DnsRecord.new(:rrid => key, :source => parts[0], :ttl => parts[1],
-                          :rrtype => parts[3], :target => parts.slice(4, parts.length-4).join(" "))
+            :rrtype => parts[3], :target => parts.slice(4, parts.length-4).join(" "))
       records.add(r)
     end
     records = records.to_a
@@ -161,23 +173,25 @@ class DopoliDnsProvider < DnsProvider
     return ret
   end
 
-	def call_remote(data)
-    #FIXME: verify certs if possible
-		data.update(self.credentials)
+  def call_remote(data)
+    data.update(self.credentials)
     uri = URI.parse(self.api_url)
     params = data.collect{|k,v| "#{k}=#{v}" }.join("&")
     params = URI.encode(params)
-		begin
+    ca_cert = File.join(File.dirname(__FILE__), '../../config/ThawteCA.pem')
+    begin
       http = Net::HTTP.new(uri.host, uri.port)
-      http.verify_mode = OpenSSL::SSL::VERIFY_PEER
-      http.ca_file = File.join(File.dirname(__FILE__), '../../config/thawte.pem')
       http.use_ssl = true
-
+      http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+      cipher_set = OpenSSL::SSL::SSLContext.new(:SSLv3).ciphers
+      http.set_context = :SSLv3
+      http.ciphers = cipher_set
+      http.ca_file = File.join(ca_cert)
       resp = http.get(uri.path+"?"+params)
-		rescue Exception => e
-			logger.error("error fetching from dopoli #{e}")
-      #FIXME re-raise or handle properly
-		end
-		return parse_response(resp.body)
-	end
+    rescue Exception => e
+      logger.error("error fetching from dopoli: #{e}")
+      return Hash.new #return empty hash 
+    end
+    return parse_response(resp.body)
+  end
 end
