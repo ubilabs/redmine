@@ -861,7 +861,7 @@ eu:
   text_own_membership_delete_confirmation: "Zure baimen batzuk (edo guztiak) kentzera zoaz eta baliteke horren ondoren proiektu hau ezin editatzea.\n Ziur zaude jarraitu nahi duzula?"
   
   default_role_manager: Kudeatzailea
-  default_role_developper: Garatzailea
+  default_role_developer: Garatzailea
   default_role_reporter: Berriemailea
   default_tracker_bug: Errorea
   default_tracker_feature: Eginbidea
@@ -886,8 +886,25 @@ eu:
   enumeration_doc_categories: Dokumentu kategoriak
   enumeration_activities: Jarduerak (denbora kontrola))
   enumeration_system_activity: Sistemako Jarduera
-  label_board_sticky: Sticky
-  label_board_locked: Locked
-  permission_export_wiki_pages: Export wiki pages
-  setting_cache_formatted_text: Cache formatted text
-  permission_manage_project_activities: Manage project activities
+  label_board_sticky: Itxaskorra
+  label_board_locked: Blokeatuta
+  permission_export_wiki_pages: Wiki orriak esportatu
+  setting_cache_formatted_text: Formatudun testua katxeatu
+  permission_manage_project_activities: Proiektuaren jarduerak kudeatu
+  error_unable_delete_issue_status: Ezine da zereginaren egoera ezabatu
+  label_profile: Profila
+  permission_manage_subtasks: Azpiatazak kudeatu
+  field_parent_issue: Guraso ataza
+  label_subtask_plural: Azpiatazak
+  label_project_copy_notifications: Proiektua kopiatzen den bitartean eposta jakinarazpenak bidali
+  error_can_not_delete_custom_field: Ezin da eremu pertsonallizatua ezabatu
+  error_unable_to_connect: Ezin da konektatu ({{value}})
+  error_can_not_remove_role: Rol hau erabiltzen hari da eta ezin da ezabatu.
+  error_can_not_delete_tracker: Aztarnari honek zereginak ditu eta ezin da ezabatu.
+  field_principal: Principal
+  label_my_page_block: My page block
+  notice_failed_to_save_members: "Failed to save member(s): {{errors}}."
+  text_zoom_out: Zoom out
+  text_zoom_in: Zoom in
+  notice_unable_delete_time_entry: Unable to delete time log entry.
+  label_overall_spent_time: Overall spent time

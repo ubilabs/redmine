@@ -19,3 +19,4 @@
 /vendor/rails
 /git_repositories/*
 deploy.rb
+*.rbc
