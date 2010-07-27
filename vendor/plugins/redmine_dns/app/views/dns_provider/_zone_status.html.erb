@@ -1,0 +1,78 @@
+<style type="text/css">
+  .icon-true {
+    background-image:url(../images/true.png);
+  }
+  .btn-stretch {
+    width: 100%;
+    height: 24px;
+}
+</style>
+
+<br/>
+<form id="record_form" method="post" action="/dns_provider/commit">
+<fieldset>
+  <legend>Domain info</legend>
+  <table class="list">
+    <tr>
+      <td><b>hostmaster: </b></td>
+      <td><label><%= @zone.soarname or 'NA' %> </label></td>
+      <td><label>records: </label></td>
+      <td><label><%= @zone.rrstotal or 'NA'%></label></td>
+      <td id="td_snapshot" >
+        <%= button_to_remote(:snapshot, {:url => {:controller => :dns_snapshot, :action => :create},
+                             :with => "Form.serialize('provider_form')+'&'+Form.serialize('record_form')+'&'+Form.serialize('template_form')"},
+                             :class => "btn-stretch") %>
+        <input type="hidden" name="zone" value="<%= @zone.name %>" />
+      </td>
+
+    </tr>
+    <tr>
+      <td><b>primary NS: </b></td>
+      <td><label><%= @zone.soamname or 'NA' %></label></td>
+      <td><label>www target: </label></td>
+      <td><label><%= @zone.wwwtargetdata or 'NA' %>  (<%=@zone.wwwtargettype%>)</label></td>
+      <td id="td_commit" >
+        <%= button_to_remote(:commit, {:url => {:action => :commit},
+                             :with => "Form.serialize('provider_form')+'&'+Form.serialize('record_form')+'&'+Form.serialize('template_form')"},
+                             :class => "btn-stretch") %>
+        <input type="hidden" name="zone" value="<%= @zone.name %>" />
+      </td>
+  </tr>
+  </table>
+</fieldset>
+<br/>
+<div class="autoscroll">
+  <table class="list" style="text-align: left">
+  <thead>
+    <tr>
+	<th><%=l(:label_rrtype)%></th>
+	<th><%=l(:label_rrdata)%></th>
+        <th></th>
+    </tr>
+  </thead>
+  <tbody id="records_table">
+    <%= render :partial => 'records',
+               :locals => {:zone => @zone, :records => @records} %>
+    <%= render :partial => 'empty_record',
+               :locals => { :zone => @zone, :count => (@records.length+1).to_s } %>
+  </tbody>
+</table>
+</div>
+</form>
+<div>
+  <% form_remote_tag(:html => { :id => "template_form",
+    :action => url_for(:controller => "dns_provider", :action => "add_template")}) do %>
+    <span style="padding-right:5px; width:15px">
+      <%= select_tag('rr_template', rrtemplate_for_select(), {:class => "small", :style=>"min-width:85px"}) %>
+      <label>select template</label>
+      <%=  observe_field(:rr_template, :url => {:action => :load_template},
+                         :with => "Form.serialize('template_form')", :update => :template_table) %>
+      <input type="hidden" name="zone" value="<%= @zone.name %>" />
+    </span>
+    <table class="list" style="text-align: left">
+      <tbody id="template_table">
+      </tbody>
+    </table>
+<% end %>
+</div>
+<div id="flash"></div>

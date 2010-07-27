@@ -1,0 +1,28 @@
+<div class="contextual">
+<%= link_to l(:label_settings_back), {:controller => 'dns_settings', :action => 'index'} %>
+</div>
+<div class="box tabular">
+  <% form_for :dns_snapshot, :url => { :action => :restore}  do |f| %>
+  <%= f.error_messages %>
+  <p style="font-size: 1.5em">
+    <%= @snap.name %> from <%= @snap.date.to_s %>
+  </p>
+  <p>note: you can't do changes here, this is just a preview</p>
+  <p>
+    <input type="hidden" name="zone" value="<%= @snap.zone %>" />
+    <input type="hidden" name="provider" value="<%= @snap.provider_id %>" />
+    <input type="submit" value="Restore" name="commit"/>
+    <input type="submit" value="Cancel" name="commit"/>
+  </p>
+  <p style="padding-left: 8px">
+  <table>
+    <tbody>
+    <% @snap.records.each_with_index do |rec, count| %>
+      <%=  render :partial => 'snapshot_record',
+                  :locals => {:count=>count.to_s, :snapshot => @snap, :record => rec } %>
+    <% end %>
+    </tbody>
+  </table>
+  </p>
+<% end %>
+</div>

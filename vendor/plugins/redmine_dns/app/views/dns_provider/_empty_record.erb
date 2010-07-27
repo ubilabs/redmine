@@ -1,0 +1,11 @@
+<tr id="row_rr<%= count %>" class="<%= cycle("odd", "even") %>">
+    <td  class="name">
+    <%= select_tag('rrtyperr'+count, rrtype_for_select(nil), :class => "small") %></td>
+    <%=  observe_field('rrtyperr'+count, :function => "Form.Element.setValue('rr"+count+"','"+@zone.name+" "+@zone.soattl.to_s+" IN '+value)") %>
+    <td class="name"><input size="65" type="text" name="rr<%= count %>" id="rr<%= count %>" /></td>
+    <td class="buttons">
+    <%= link_to_remote( '', :url => { :controller => 'dns_provider', :action => 'new_record' },
+                            :with => "Form.Element.serialize('domain')+'&input='+Form.Element.serialize('rr"+count+"')+'&'+Form.Element.serialize('provider')",
+                            :html => {:class => 'icon icon-true'}) %>
+    </td>
+  </tr>

@@ -1,0 +1,94 @@
+<style type="text/css">
+  .icon-true {
+    background-image:url(../images/true.png);
+  }
+</style>
+
+<div class="contextual">
+<%= link_to l(:label_dns_zones), {:controller => 'dns_provider', :action => 'index'} %>
+</div>
+<h2>Dns Settings</h2>
+<h3>Dns Templates</h3>
+<table class="list">
+  <thead>
+    <tr>
+	<th style="text-align: left"><%=l(:label_template_name)%></th>
+	<th style="text-align: left"><%=l(:label_template_desc)%></th>
+    <th style="text-align: right; padding-right: 10px">
+      <%= link_to '', {:controller => 'dns_template', :action => 'new'}, :class => 'icon icon-add' %>
+    </th>
+    </tr>
+  </thead>
+  <tbody id="templates">
+  <% @templates.each do |t| %>
+    <%= render :partial => 'template_row', :locals =>{:t => t} %>
+  <% end %>
+  </tbody>
+</table>
+<br />
+<h3>Dns Snapshots</h3>
+<table class="list">
+  <thead>
+    <tr>
+	  <th style="text-align: left"><%=l(:label_domain)%></th>
+      <th style="text-align: left"><%=l(:label_snapname)%></th>
+      <th style="text-align: left"><%=l(:label_snapdate)%></th>
+      <th style="text-align: left"><%=l(:label_snap_reccount)%></th>
+      <th><!--buttons --></th>
+    </tr>
+  </thead>
+  <tbody id="snapshosts">
+  <% @snapshots.each do |s| %>
+    <%= render :partial => 'snapshot_row', :locals =>{:s => s} %>
+  <% end %>
+  </tbody>
+</table>
+<br />
+<h3>Dns Provider</h3>
+<table class="list">
+  <thead>
+    <tr>
+	<th style="text-align: left"><%=l(:label_provider)%></th>
+	<th style="text-align: left"><%=l(:label_login)%></th>
+        <th></th>
+    </tr>
+  </thead>
+  <tbody>
+  <% @providers.each do |p| %>
+    <tr>
+      <td><%= p.type %></td>
+      <td><%= p.username %></td>
+      <td class="buttons">
+        <%= link_to_remote('', :url => { :controller => 'dns_settings', :action => 'del_provider' },
+                           :with => "Form.Element.serialize('"+p.username+"')+'&input='+Form.Element.serialize('"+p.type+"')",
+                           :html => { :class => 'icon icon-del' }) %>
+      </td>
+    </tr>
+  <% end %>
+  </tbody>
+</table>
+<br />
+<p>new provider</p>
+<div class="box tabular">
+<% form_remote_tag(:url => "/dns_settings/new_provider") do %>
+  <p>
+    <label><%= l(:label_provider) %></label>
+    <%= select_tag 'provider',providers_for_select(@providers), :class => "small" %>
+  </p>
+  <p>
+    <label><%= l(:label_login) %>:</label>
+    <input size="30" type="text" name="username" />
+ </p>
+ <p>
+    <label><%= l(:label_password) %>:</label>
+    <input size="30" type="password" name="password" />
+</p>
+<p>
+    <label><%= l(:label_password_confirm) %>:</label>
+    <input size="30" type="password" name="password_confirm" />
+</p>
+<p>
+  <input type="submit" value="Create" name="commit"/>
+</p>
+<% end %>
+</div>
