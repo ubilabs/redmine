@@ -2,7 +2,8 @@ require 'json'
 require 'open3'
 
 class GithubHookController < ApplicationController
-
+  unloadable
+  
   skip_before_filter :verify_authenticity_token, :check_if_login_required
 
   def index
