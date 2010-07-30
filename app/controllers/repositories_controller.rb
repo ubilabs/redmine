@@ -42,6 +42,7 @@ class RepositoriesController < ApplicationController
     end
     if request.post? && @repository
       @repository.attributes = params[:repository]
+      @repository.url = "#{RAILS_ROOT}/git_repositories/#{@repository.project.identifier}.git"
       @repository.save
     end
     render(:update) do |page|
@@ -70,6 +71,7 @@ class RepositoriesController < ApplicationController
   
   def destroy
     @repository.destroy
+    FileUtils.rm_rf(@repository.url)
     redirect_to :controller => 'projects', :action => 'settings', :id => @project, :tab => 'repository'
   end
   
