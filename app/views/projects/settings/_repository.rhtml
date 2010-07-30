@@ -8,7 +8,7 @@
 <div class="box tabular">
 <p><%= label_tag('repository_scm', l(:label_scm)) %><%= scm_select_tag(@repository) %></p>
 <% if @repository %>
-  <p><%= label_tag('repositories_branches', l(:label_github_url)) %><%= text_field_tag("repository[github_url]", @repository.github_url, :required => true) %> <%= l(:text_github_info) %></p>
+  <p><%= label_tag('repositories_branches', l(:label_github_url)) %><%= text_field_tag("repository[github_url]", @repository.github_url, :required => true, :disabled => @repository) %> <%= l(:text_github_info) %></p>
   <p><%= label_tag('repositories_branches', l(:label_scm_branches)) %><%= text_field_tag("repository[project_branches]", @repository.project_branches) %> <%= l(:text_github_branch_info) %></p>
 <% end %>
 </div>
