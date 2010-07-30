@@ -16,6 +16,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 class Repository < ActiveRecord::Base
+  require 'open3'
+  
   belongs_to :project
   has_many :changesets, :order => "#{Changeset.table_name}.committed_on DESC, #{Changeset.table_name}.id DESC"
   has_many :changes, :through => :changesets
@@ -24,19 +26,24 @@ class Repository < ActiveRecord::Base
   # has_many :changesets, :dependent => :destroy is too slow for big repositories
   before_destroy :clear_changesets
   
+  after_create :checkout_repository
+  after_update :checkout_repository
+  
   # Checks if the SCM is enabled when creating a repository
   validate_on_create { |r| r.errors.add(:type, :invalid) unless Setting.enabled_scm.include?(r.class.name.demodulize) }
-  
+
+  GITHUB_REPO_DIR = "#{RAILS_ROOT}/git_repositories"
+
   # Removes leading and trailing whitespace
   def url=(arg)
     write_attribute(:url, arg ? arg.to_s.strip : nil)
   end
-  
+      
   # Removes leading and trailing whitespace
   def root_url=(arg)
     write_attribute(:root_url, arg ? arg.to_s.strip : nil)
   end
-
+  
   def scm
     @scm ||= self.scm_adapter.new url, root_url, login, password
     update_attribute(:root_url, @scm.root_url) if root_url.blank?
@@ -212,4 +219,50 @@ class Repository < ActiveRecord::Base
     connection.delete("DELETE FROM #{ci} WHERE #{ci}.changeset_id IN (SELECT #{cs}.id FROM #{cs} WHERE #{cs}.repository_id = #{id})")
     connection.delete("DELETE FROM #{cs} WHERE #{cs}.repository_id = #{id}")
   end
+  
+  def checkout_repository
+    # Checkout the given repository from github when github_url exists
+    unless self.github_url.blank?
+      FileUtils.mkdir(GITHUB_REPO_DIR) unless File.directory?(GITHUB_REPO_DIR)
+      unless File.directory?(self.url)
+        cmd = "git clone --bare #{self.github_url} #{self.url}"
+        cmd += " && cd #{self.url}"
+        cmd += " && git remote add origin #{self.github_url}"
+        logger.debug { "Checkout Repository: Executing command: '#{cmd}'" }
+        stdin, stdout, stderr = Open3.popen3(cmd)
+        logging_github_handling(stdout, stderr)
+      end
+      checkout_remote_branches unless self.project_branches.blank?
+    end
+  end
+  
+  def checkout_remote_branches
+    # if there are remote branches in project_branches which are not already checked out, do this
+    unless self.project_branches.blank?
+      # look at repository which branches exists
+      repo_path = "cd #{self.url}"
+      local_branches_cmd = "#{repo_path} && git branch"
+      lokal_stdin, lokal_stdout, lokal_stderr = Open3.popen3(local_branches_cmd)
+      current_branches = lokal_stdout.readlines.collect{|i| i.gsub(/\* /, '').strip }
+      
+      branches_to_checkout = self.project_branches.split(",")
+      # are there branches in project_branches which are not just checked out?
+      checkout_branches = branches_to_checkout - current_branches
+      
+      # checkout wanted branches
+      checkout_branches.each do |remote_branch|
+        cmd = "#{repo_path} && git checkout --track -b #{remote_branch} origin/#{remote_branch}"
+        stdin, stdout, stderr = Open3.popen3(cmd)
+        logging_github_handling(stdout, stderr)
+      end
+    end
+  end
+  
+  def logging_github_handling(stdout, stderr)
+    output = stdout.readlines.collect(&:strip)
+    errors = stderr.readlines.collect(&:strip)
+    logger.debug { "GIT REPOSITORY:  * STDOUT: #{output}"}
+    logger.debug { "GIT REPOSITORY:  * STDERR: #{output}"}
+  end
+  
 end
