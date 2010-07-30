@@ -731,6 +731,10 @@ de:
   label_general: Allgemein
   label_more: Mehr
   label_scm: Versionskontrollsystem
+  label_scm_branches: Branch (mehrere durch Komma trennen)
+  label_github_url: Github URL
+  text_github_info: z.B. git@github.com:git_user/project.git
+  text_github_branch_info: beim initialen Anlegen des Repositories sind alle Branches enthalten. Hier können nachträglich Branches hinzugefügt werden
   label_plugins: Plugins
   label_ldap_authentication: LDAP-Authentifizierung
   label_downloads_abbr: D/L
